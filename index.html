@@ -4,17 +4,166 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Portal RE/MAX Space</title>
+<link rel="icon" href="data:,">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <style>
-body{font-family:Arial,sans-serif;background:#f1f5f9;display:flex;align-items:center;justify-content:center;height:100vh;margin:0}
-.box{background:#fff;border-radius:16px;padding:40px;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,.1);max-width:400px}
-h1{color:#0f1a35;font-size:24px}
-p{color:#6b7280;font-size:14px}
+:root{
+  --azul:#003DA5;
+  --azul-d:#0f1a35;
+  --verde:#059669;
+  --vermelho:#dc2626;
+  --bg:#f1f5f9;
+  --card:#ffffff;
+  --txt:#1e293b;
+  --muted:#6b7280;
+  --border:#e5e7eb;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--txt);min-height:100vh}
+.wrap{max-width:480px;margin:0 auto;min-height:100vh;background:var(--bg);display:flex;flex-direction:column}
+
+/* ===== LOGIN ===== */
+#login-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:24px}
+.logo-box{text-align:center;margin-bottom:32px}
+.logo-box .icon{font-size:48px;margin-bottom:8px}
+.logo-box h1{font-size:22px;color:var(--azul-d);font-weight:900;letter-spacing:.5px}
+.logo-box p{font-size:13px;color:var(--muted);margin-top:4px}
+.login-card{background:var(--card);border-radius:16px;padding:28px 24px;width:100%;box-shadow:0 4px 20px rgba(0,0,0,.06)}
+.login-card h2{font-size:16px;margin-bottom:4px;color:var(--azul-d)}
+.login-card .sub{font-size:12px;color:var(--muted);margin-bottom:20px}
+.fg{margin-bottom:16px}
+.fg label{display:block;font-size:12px;font-weight:700;color:var(--azul-d);margin-bottom:6px}
+.fg input,.fg select{width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:15px;background:#fafafa;transition:.15s}
+.fg input:focus{outline:none;border-color:var(--azul);background:#fff}
+.btn{display:block;width:100%;border:none;border-radius:10px;padding:14px;font-size:15px;font-weight:800;cursor:pointer;letter-spacing:.3px;transition:.15s}
+.btn-primary{background:linear-gradient(135deg,var(--azul),#0050cc);color:#fff;box-shadow:0 4px 12px rgba(0,61,165,.25)}
+.btn-primary:active{transform:scale(.98)}
+.btn-primary:disabled{opacity:.6;cursor:default}
+.err-msg{background:#fef2f2;color:#991b1b;border-radius:8px;padding:10px 12px;font-size:12px;font-weight:600;margin-bottom:14px;display:none}
+.tab-toggle{display:flex;gap:6px;margin-bottom:20px;background:#f1f5f9;border-radius:10px;padding:4px}
+.tab-toggle button{flex:1;border:none;background:transparent;padding:10px;border-radius:8px;font-size:13px;font-weight:700;color:var(--muted);cursor:pointer;transition:.15s}
+.tab-toggle button.active{background:#fff;color:var(--azul-d);box-shadow:0 1px 4px rgba(0,0,0,.08)}
+
+/* ===== APP (após login) ===== */
+#app-screen{display:none}
+.topbar{background:var(--azul-d);color:#fff;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:10}
+.topbar .brand{font-size:15px;font-weight:900}
+.topbar .brand small{display:block;font-size:10px;opacity:.7;font-weight:400}
+.topbar .logout{background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:8px;padding:8px 12px;font-size:12px;font-weight:700;cursor:pointer}
+
+.content{padding:16px;flex:1}
+.greeting{padding:4px 0 16px}
+.greeting h2{font-size:18px;color:var(--azul-d)}
+.greeting p{font-size:12px;color:var(--muted);margin-top:2px}
+
+.card{background:var(--card);border-radius:14px;padding:18px;margin-bottom:14px;box-shadow:0 1px 6px rgba(0,0,0,.04)}
+.card h3{font-size:14px;color:var(--azul-d);font-weight:800;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+
+.kpi-row{display:flex;gap:10px;margin-bottom:14px}
+.kpi{flex:1;background:var(--card);border-radius:12px;padding:14px;text-align:center;box-shadow:0 1px 6px rgba(0,0,0,.04)}
+.kpi .val{font-size:18px;font-weight:900;color:var(--azul-d)}
+.kpi .lbl{font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-top:2px}
+
+.boleto-item{border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center}
+.boleto-item .info .mes{font-size:13px;font-weight:700;color:var(--azul-d)}
+.boleto-item .info .venc{font-size:11px;color:var(--muted)}
+.boleto-item .val{font-size:15px;font-weight:900;color:var(--azul-d);text-align:right}
+.tag{display:inline-block;font-size:10px;font-weight:800;padding:2px 8px;border-radius:6px;margin-top:2px}
+.tag-pendente{background:#fef9c3;color:#92400e}
+.tag-pago{background:#dcfce7;color:#166534}
+.tag-atraso{background:#fef2f2;color:#991b1b}
+
+.row-list{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f3f4f6;font-size:13px}
+.row-list:last-child{border-bottom:none}
+.row-list .l{color:var(--muted)}
+.row-list .v{font-weight:700;color:var(--azul-d)}
+
+.bottomnav{display:flex;background:#fff;border-top:1px solid var(--border);position:sticky;bottom:0;z-index:10}
+.bottomnav button{flex:1;border:none;background:transparent;padding:10px 4px;font-size:11px;font-weight:700;color:var(--muted);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px}
+.bottomnav button.active{color:var(--azul)}
+.bottomnav button .ic{font-size:20px}
+
+.empty{text-align:center;padding:30px 10px;color:var(--muted)}
+.empty .ic{font-size:36px;margin-bottom:8px}
+.empty p{font-size:13px}
+
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:100;padding:20px}
+.modal-box{background:#fff;border-radius:16px;padding:20px;max-width:440px;width:100%;max-height:85vh;overflow:auto}
+.modal-box h3{font-size:15px;color:var(--azul-d);margin-bottom:14px}
+.modal-close{float:right;background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted)}
+
+.pix-codigo{background:#fff;border:2px solid var(--azul);border-radius:8px;padding:10px;font-size:10px;font-family:monospace;word-break:break-all;color:#000;line-height:1.8;user-select:all}
+.btn-copy{display:block;width:100%;background:linear-gradient(135deg,var(--azul),#0050cc);color:#fff;border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:800;cursor:pointer;margin-top:10px}
+.copy-ok{display:none;text-align:center;margin-top:8px;color:var(--verde);font-weight:700;font-size:13px;padding:8px;background:#f0fdf4;border-radius:8px}
+
+.loading{display:flex;align-items:center;justify-content:center;min-height:100vh;color:var(--muted);font-size:14px}
+.spinner{width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--azul);border-radius:50%;animation:spin 0.8s linear infinite;margin-right:10px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+@media print{
+  .topbar,.bottomnav,.btn-copy,.copy-ok,.modal-close,#login-screen{display:none!important}
+  .pix-codigo{border:1px solid #003DA5!important}
+}
 </style>
 </head>
 <body>
-<div class="box">
-<h1>🏠 Portal RE/MAX Space</h1>
-<p>Em construção — disponível em breve.</p>
+<div class="wrap">
+
+  <!-- LOADING -->
+  <div id="loading-screen" class="loading">
+    <div class="spinner"></div> Carregando...
+  </div>
+
+  <!-- LOGIN -->
+  <div id="login-screen" style="display:none">
+    <div class="logo-box">
+      <div class="icon">🏠</div>
+      <h1>RE/MAX Space</h1>
+      <p>Portal do Cliente — Caldas Novas GO</p>
+    </div>
+    <div class="login-card">
+      <div class="tab-toggle">
+        <button id="tab-inq" class="active" onclick="setTipo('inquilino')">Sou Inquilino</button>
+        <button id="tab-prop" onclick="setTipo('proprietario')">Sou Proprietário</button>
+      </div>
+      <h2 id="login-title">Acesso do Inquilino</h2>
+      <p class="sub">Entre com seu CPF e data de nascimento</p>
+      <div class="err-msg" id="login-err"></div>
+      <div class="fg">
+        <label>CPF</label>
+        <input id="login-cpf" inputmode="numeric" placeholder="000.000.000-00" maxlength="14">
+      </div>
+      <div class="fg">
+        <label>Data de Nascimento</label>
+        <input id="login-nasc" type="date">
+      </div>
+      <button class="btn btn-primary" id="btn-login" onclick="doLogin()">Entrar</button>
+    </div>
+    <p style="font-size:11px;color:var(--muted);margin-top:20px;text-align:center">
+      Em caso de dúvidas, fale com a RE/MAX Space pelo WhatsApp.
+    </p>
+  </div>
+
+  <!-- APP -->
+  <div id="app-screen">
+    <div class="topbar">
+      <div class="brand">RE/MAX Space<small id="topbar-sub">Portal do Cliente</small></div>
+      <button class="logout" onclick="doLogout()">Saída</button>
+    </div>
+
+    <div class="content" id="content"></div>
+
+    <div class="bottomnav" id="bottomnav"></div>
+  </div>
+
 </div>
+
+<!-- MODAL -->
+<div class="modal-bg" id="modal-bg">
+  <div class="modal-box" id="modal-box"></div>
+</div>
+
+<script src="app.js?v=1"></script>
 </body>
 </html>
